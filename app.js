@@ -5,31 +5,38 @@ const path = require('path');
 require('dotenv').config();
 require('express-async-errors'); // Automatically handles async errors
 
-const { PORT, MONGO_URI } = process.env
 const app = express();
 
 // Middleware
-app.use(express.json());  // Parse JSON requests
+app.use(express.json()); // Parse JSON requests
 
-// Serve static files from the "public" folder
+// Serve static files (for frontend, if any)
 app.use(express.static(path.join(__dirname, 'public')));
 
-// Album routes
+// Routes
 app.use('/albums', albumRoutes);
 
+// Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({ message: 'Something went wrong', error: err.message });
 });
-// MongoDB connection
-const dbURI = MONGO_URI;
-mongoose.connect(dbURI, { 
-  //useNewUrlParser: true, 
-  //useUnifiedTopology: true 
-})
+
+// MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
   .then(() => {
-    app.listen(3000, () => {
-      console.log(`Server running on port ${PORT}`);
+    console.log('MongoDB connected');
+    const port = process.env.PORT || 3000; // Use PORT from Vercel or fallback to 3000
+    app.listen(port, () => {
+      console.log(`Server running on port ${port}`);
     });
   })
-  .catch(err => console.log('MongoDB connection error: ', err));
+  .catch((err) => {
+    console.error('MongoDB connection error:', err.message);
+  });
+
+module.exports = app;
